@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lit Chat</title>
+<style>
+:root{--bg:#ffffff;--ink:#050505;--muted:#65676b;--blue:#0084ff;--blue2:#0a5fff;--theirs:#e9eaee;--line:#e4e6eb;--field:#f0f2f5;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#18191a;--ink:#e4e6eb;--muted:#b0b3b8;--theirs:#303233;--line:#2f3031;--field:#3a3b3c}}
+:root[data-theme="dark"]{--bg:#18191a;--ink:#e4e6eb;--muted:#b0b3b8;--theirs:#303233;--line:#2f3031;--field:#3a3b3c}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*{box-sizing:border-box}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.35 system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.view{height:100%;display:flex;flex-direction:column;max-width:640px;margin:0 auto}
+[hidden]{display:none!important}
+button{font:inherit;cursor:pointer;border:0;background:none;color:var(--blue);display:grid;place-items:center;width:36px;height:36px;border-radius:50%;flex:none}
+button:hover{background:var(--field)}
+button svg{width:22px;height:22px;fill:currentColor}
+header{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}
+h1{margin:0;font-size:24px;flex:1;padding-left:6px}
+.av{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-weight:700;font-size:17px}
+.av.sm{width:28px;height:28px;font-size:12px}.av.hd{width:36px;height:36px;font-size:14px}
+.who{flex:1;min-width:0}.who b{display:block;font-size:16px}.who span{font-size:12px;color:var(--muted)}
+.who span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#31a24c;margin-right:5px}
+input.f{border:0;background:var(--field);color:var(--ink);border-radius:999px;padding:10px 16px;font:inherit;min-width:0}
+input:focus-visible,button:focus-visible,.fr:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.add{display:flex;gap:6px;padding:10px 12px;align-items:center}.add input{flex:1}
+.me-row{padding:0 16px 6px;display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13px}.me-row input{flex:1;padding:6px 12px;font-size:13px}
+#list{flex:1;overflow-y:auto}
+.fr{display:flex;align-items:center;gap:12px;padding:8px 14px;cursor:pointer}.fr:hover{background:var(--field)}
+.fr .who span::before{display:none}.fr .who span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr small{color:var(--muted);font-size:12px}
+.empty{margin:40px auto;text-align:center;color:var(--muted);padding:0 24px}
+#log{flex:1;overflow-y:auto;padding:12px 12px 4px;display:flex;flex-direction:column}
+.row{display:flex;align-items:flex-end;gap:8px;margin-top:2px}.row.me{justify-content:flex-end}.row.gap{margin-top:10px}
+.sp{width:28px;flex:none}
+.msg{max-width:72%;padding:8px 12px;border-radius:18px;white-space:pre-wrap;word-wrap:break-word}
+.me .msg{background:linear-gradient(180deg,var(--blue),var(--blue2));color:#fff}
+.them .msg{background:var(--theirs)}
+.stamp{text-align:center;font-size:12px;color:var(--muted);margin:10px 0 4px}
+.dots{display:inline-flex;gap:4px;padding:12px 14px}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:b 1s infinite}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,60%,100%{opacity:.35}30%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.dots i{animation:none}}
+.bar{display:flex;align-items:center;gap:6px;padding:8px 10px}.bar input{flex:1}
+</style>
+</head>
+<body>
+<div id="home" class="view">
+  <header><h1>Chats</h1></header>
+  <div class="add"><input class="f" id="fname" maxlength="20" placeholder="Add a friend by name" aria-label="Friend name"><button id="addbtn" title="Add friend" aria-label="Add friend"><svg viewBox="0 0 24 24"><path d="M15 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-9 0V9H4v3H1v2h3v3h2v-3h3v-2H6zm9 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4z"/></svg></button></div>
+  <div class="me-row">Your name <input class="f" id="myname" maxlength="16" placeholder="You" aria-label="Your name"></div>
+  <div id="list"></div>
+</div>
+<div id="chat" class="view" hidden>
+  <header>
+    <button id="back" title="Back" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg></button>
+    <div class="av hd" id="hav"></div>
+    <div class="who"><b id="hname"></b><span>Active now</span></div>
+    <button id="unfriend" title="Remove friend" aria-label="Remove friend"><svg viewBox="0 0 24 24"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+  </header>
+  <div id="log" aria-live="polite"></div>
+  <div class="bar"><input class="f" id="text" placeholder="Aa" autocomplete="off" aria-label="Message"><button id="send" title="Send" aria-label="Send"><svg id="ico" viewBox="0 0 24 24"></svg></button></div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const SEND='<path d="M2 21l21-9L2 3v7l15 2-15 2z"/>',LIKE='<path d="M1 21h4V9H1v12zm22-11a2 2 0 0 0-2-2h-6.3l1-4.6v-.3c0-.4-.2-.8-.4-1.1L14 1 7.6 7.4C7.2 7.8 7 8.3 7 9v10a2 2 0 0 0 2 2h9c.8 0 1.5-.5 1.8-1.2l3-7c.1-.2.2-.5.2-.8v-2z"/>';
+const PAL=['#8a5cff,#ff4fa3','#00b894,#0984e3','#fdcb6e,#e17055','#e84393,#fd79a8','#00cec9,#6c5ce7','#ff7675,#d63031'];
+const replies=['That’s lit! 🔥','Haha, same here.','Tell me more!','I’m in. When?','Wait, really?','Love it 😄','Send pics!'];
+let S={me:'You',friends:[{id:'nova',name:'Nova',g:PAL[0]},{id:'kai',name:'Kai',g:PAL[1]},{id:'mira',name:'Mira',g:PAL[2]}],chats:{}},cur=null;
+try{const s=JSON.parse(localStorage.getItem('litchat:v2'));if(s&&s.friends)S=s}catch(e){}
+function save(){try{localStorage.setItem('litchat:v2',JSON.stringify(S))}catch(e){}}
+function av(n,g,cls){const a=document.createElement('div');a.className='av '+(cls||'');a.style.background='linear-gradient(135deg,'+g+')';a.textContent=n[0].toUpperCase();return a}
+function fmt(t){return new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}
+function home(){cur=null;$('chat').hidden=true;$('home').hidden=false;$('myname').value=S.me==='You'?'':S.me;const l=$('list');l.innerHTML='';
+if(!S.friends.length){l.innerHTML='<div class="empty"><b>No friends yet</b><p>Type a name above and tap the add button.</p></div>';return}
+S.friends.forEach(f=>{const m=(S.chats[f.id]||[]).slice(-1)[0];const r=document.createElement('div');r.className='fr';r.tabIndex=0;r.setAttribute('role','button');
+r.appendChild(av(f.name,f.g));const w=document.createElement('div');w.className='who';w.innerHTML='<b></b><span></span>';w.firstChild.textContent=f.name;w.lastChild.textContent=m?(m.mine?'You: ':'')+m.t:'Say hi to '+f.name;r.appendChild(w);
+if(m){const s=document.createElement('small');s.textContent=fmt(m.at);r.appendChild(s)}
+r.onclick=()=>open(f.id);r.onkeydown=e=>{if(e.key==='Enter')open(f.id)};l.appendChild(r)})}
+function open(id){cur=S.friends.find(f=>f.id===id);if(!cur)return;$('home').hidden=true;$('chat').hidden=false;$('hav').replaceWith(Object.assign(av(cur.name,cur.g,'hd'),{id:'hav'}));$('hname').textContent=cur.name;render();upd();$('text').focus()}
+function render(typing){const log=$('log');log.innerHTML='';const msgs=S.chats[cur.id]||[];
+if(!msgs.length&&!typing){log.innerHTML='<div class="empty"><b></b><p>You and this friend are connected. Say hi!</p></div>';log.querySelector('b').textContent=cur.name;return}
+let last=null,lastAt=0;
+msgs.forEach((m,i)=>{if(m.at-lastAt>600000){const s=document.createElement('div');s.className='stamp';s.textContent=fmt(m.at);log.appendChild(s);last=null}lastAt=m.at;
+const r=document.createElement('div');r.className='row '+(m.mine?'me':'them')+(last!==m.mine?' gap':'');
+const ns=msgs[i+1]&&msgs[i+1].mine===m.mine&&msgs[i+1].at-m.at<600000;
+if(!m.mine){if(!ns)r.appendChild(av(cur.name,cur.g,'sm'));else{const s=document.createElement('div');s.className='sp';r.appendChild(s)}}
+const b=document.createElement('div');b.className='msg';b.textContent=m.t;r.appendChild(b);log.appendChild(r);last=m.mine});
+if(typing){const r=document.createElement('div');r.className='row them gap';r.appendChild(av(cur.name,cur.g,'sm'));const d=document.createElement('div');d.className='msg dots';d.innerHTML='<i></i><i></i><i></i>';r.appendChild(d);log.appendChild(r)}
+log.scrollTop=log.scrollHeight}
+function upd(){$('ico').innerHTML=$('text').value.trim()?SEND:LIKE}
+function send(){if(!cur)return;const f=cur,t=$('text').value.trim()||'👍';(S.chats[f.id]=S.chats[f.id]||[]).push({t,at:Date.now(),mine:true});$('text').value='';upd();save();render(true);
+setTimeout(()=>{(S.chats[f.id]=S.chats[f.id]||[]).push({t:replies[Math.floor(Math.random()*replies.length)],at:Date.now(),mine:false});save();if(cur&&cur.id===f.id)render()},1000+Math.random()*900)}
+function addFriend(){const n=$('fname').value.trim();if(!n)return;
+if(S.friends.some(f=>f.name.toLowerCase()===n.toLowerCase())){$('fname').value='';$('fname').placeholder=n+' is already your friend';return}
+const f={id:'f'+Date.now(),name:n,g:PAL[S.friends.length%PAL.length]};S.friends.unshift(f);$('fname').value='';$('fname').placeholder='Add a friend by name';save();home()}
+$('addbtn').onclick=addFriend;$('fname').onkeydown=e=>{if(e.key==='Enter')addFriend()};
+$('myname').onchange=()=>{S.me=$('myname').value.trim()||'You';save()};
+$('back').onclick=home;
+$('unfriend').onclick=()=>{if(!cur)return;S.friends=S.friends.filter(f=>f.id!==cur.id);delete S.chats[cur.id];save();home()};
+$('send').onclick=send;$('text').oninput=upd;$('text').onkeydown=e=>{if(e.key==='Enter')send()};
+home();
+</script>
+</body>
+</html>
